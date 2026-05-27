@@ -1,7 +1,5 @@
 streamlit
-tensorflow
 numpy
 pandas
 plotly
 scikit-learn
-pickle-mixin
