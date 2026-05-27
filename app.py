@@ -1,10 +1,9 @@
+
 import streamlit as st
 import numpy as np
 import pickle
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-import plotly.express as px
 import pandas as pd
+import plotly.express as px
 import random
 
 # =========================================================
@@ -24,134 +23,131 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-.main {
-    background-color: #0f172a;
+.stApp {
+    background: linear-gradient(to right, #0f172a, #111827);
     color: white;
+}
+
+.title {
+    text-align: center;
+    font-size: 52px;
+    font-weight: bold;
+    color: #38bdf8;
+}
+
+.subtitle {
+    text-align: center;
+    font-size: 20px;
+    color: #cbd5e1;
+    margin-bottom: 30px;
 }
 
 .stTextArea textarea {
     background-color: #1e293b !important;
     color: white !important;
-    border-radius: 12px !important;
-    border: 1px solid #334155 !important;
+    border-radius: 15px !important;
+    border: 1px solid #475569 !important;
+    font-size: 18px !important;
 }
 
-.title {
-    text-align:center;
-    font-size:50px;
-    font-weight:bold;
-    color:#38bdf8;
-}
-
-.subtitle {
-    text-align:center;
-    font-size:20px;
-    color:#cbd5e1;
-}
-
-.prediction-box {
-    padding:20px;
-    border-radius:20px;
-    background:linear-gradient(135deg,#1e293b,#0f172a);
-    box-shadow:0px 0px 20px rgba(0,0,0,0.5);
+.result-box {
+    background: #1e293b;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0px 0px 15px rgba(0,0,0,0.4);
 }
 
 .tip-box {
-    padding:18px;
-    border-radius:18px;
-    background:#111827;
-    border-left:5px solid #38bdf8;
-    margin-top:15px;
+    background: #111827;
+    padding: 18px;
+    border-radius: 16px;
+    margin-top: 15px;
+    border-left: 5px solid #38bdf8;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# LOAD MODEL + TOKENIZER
+# LOAD MODEL
 # =========================================================
 
-model = load_model("mental_health_rnn.h5")
-
-with open("tokenizer.pkl", "rb") as f:
-    tokenizer = pickle.load(f)
-
-with open("label_encoder.pkl", "rb") as f:
-    label_encoder = pickle.load(f)
+model = pickle.load(open("mental_health_model.pkl", "rb"))
+vectorizer = pickle.load(open("tfidf_vectorizer.pkl", "rb"))
 
 # =========================================================
-# LABEL GUIDANCE
+# GUIDANCE DATA
 # =========================================================
 
 guidance = {
 
     "normal": {
         "message": "You seem emotionally balanced today 🌸",
-        "activity": "Maintain your routine and spend time doing something creative.",
+        "activity": "Spend time learning something creative.",
         "tips": [
-            "Stay hydrated",
-            "Exercise for 20 minutes",
-            "Keep a gratitude journal"
+            "Exercise regularly",
+            "Maintain healthy sleep",
+            "Stay socially connected"
         ]
     },
 
     "anxiety": {
-        "message": "Your text reflects signs of anxiety. Slow down and breathe 🌿",
-        "activity": "Take a short walk and avoid overstimulating environments.",
+        "message": "Your text reflects anxiety signs 🌿",
+        "activity": "Take deep breaths and relax for a few minutes.",
         "tips": [
-            "Practice deep breathing",
-            "Reduce screen time",
-            "Talk with someone you trust"
+            "Avoid overthinking",
+            "Practice meditation",
+            "Reduce screen exposure"
         ]
     },
 
     "stress": {
-        "message": "You may be mentally overwhelmed right now 💙",
-        "activity": "Take a short break and listen to calming music.",
+        "message": "You may be mentally overloaded 💙",
+        "activity": "Take a short walk or listen to calm music.",
         "tips": [
-            "Prioritize sleep",
-            "Break tasks into smaller goals",
+            "Break tasks into small steps",
+            "Sleep properly",
             "Avoid multitasking"
         ]
     },
 
     "depression": {
-        "message": "Your text may indicate emotional exhaustion or sadness 🌧️",
-        "activity": "Spend time outdoors or with supportive people.",
+        "message": "Your text may indicate sadness 🌧️",
+        "activity": "Talk to someone you trust.",
         "tips": [
             "Do not isolate yourself",
-            "Maintain a regular sleep schedule",
-            "Seek professional guidance if feelings persist"
+            "Get sunlight exposure",
+            "Seek professional support if needed"
         ]
     },
 
     "suicidal": {
-        "message": "Your emotional state may need urgent support ❤️",
-        "activity": "Please reach out to someone immediately.",
+        "message": "Please seek immediate emotional support ❤️",
+        "activity": "Contact someone close to you right now.",
         "tips": [
-            "Contact a trusted person",
             "Avoid staying alone",
-            "Seek professional mental health support"
+            "Call a trusted person",
+            "Reach out to mental health professionals"
+        ]
+    },
+
+    "bipolar": {
+        "message": "Your text reflects mood fluctuations ⚡",
+        "activity": "Maintain a stable daily routine.",
+        "tips": [
+            "Track your mood",
+            "Maintain sleep schedule",
+            "Avoid impulsive decisions"
         ]
     },
 
     "personality disorder": {
         "message": "Your text shows emotional instability patterns 🧠",
-        "activity": "Maintain a calm environment and healthy communication.",
+        "activity": "Practice mindfulness and emotional regulation.",
         "tips": [
-            "Practice mindfulness",
-            "Maintain emotional journals",
-            "Consider therapy support"
-        ]
-    },
-
-    "bipolar": {
-        "message": "Mood fluctuations may be reflected in your text ⚡",
-        "activity": "Try maintaining a stable daily routine.",
-        "tips": [
-            "Track mood patterns",
-            "Sleep consistently",
-            "Avoid impulsive decisions"
+            "Write journals",
+            "Avoid emotional triggers",
+            "Maintain calm communication"
         ]
     }
 }
@@ -163,42 +159,40 @@ guidance = {
 st.markdown("<div class='title'>🧠 MindCare AI</div>", unsafe_allow_html=True)
 
 st.markdown(
-    "<div class='subtitle'>RNN + NLP Mental Health Emotion Detection System</div>",
+    "<div class='subtitle'>Mental Health Emotion Detection using NLP</div>",
     unsafe_allow_html=True
 )
-
-st.write("")
 
 # =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.header("📌 About")
+st.sidebar.title("📌 About Project")
 
-st.sidebar.write("""
-This project uses:
+st.sidebar.info("""
+This AI system detects:
 
-✅ NLP  
-✅ Tokenization  
-✅ RNN Deep Learning  
-✅ Emotional Classification  
-✅ Real-Time Guidance System  
+✅ Stress  
+✅ Anxiety  
+✅ Depression  
+✅ Bipolar  
+✅ Suicidal Thoughts  
+✅ Personality Disorder  
+✅ Normal Emotion
 """)
 
-st.sidebar.success("Built with Streamlit + TensorFlow")
-
 # =========================================================
-# INPUT AREA
+# INPUT
 # =========================================================
 
 user_input = st.text_area(
-    "💬 Enter your thoughts or feelings",
+    "💬 Enter your feelings or thoughts",
     height=180,
-    placeholder="Example: I feel lonely and mentally exhausted..."
+    placeholder="Example: I feel emotionally exhausted and lonely..."
 )
 
 # =========================================================
-# PREDICTION
+# PREDICT BUTTON
 # =========================================================
 
 if st.button("🔍 Analyze Emotion"):
@@ -207,23 +201,19 @@ if st.button("🔍 Analyze Emotion"):
         st.warning("Please enter some text.")
     else:
 
-        # Tokenization
-        sequence = tokenizer.texts_to_sequences([user_input])
-
-        # Padding
-        padded = pad_sequences(sequence, maxlen=100)
+        # Transform text
+        text_vector = vectorizer.transform([user_input])
 
         # Prediction
-        prediction = model.predict(padded)
+        prediction = model.predict(text_vector)[0]
 
-        predicted_class = np.argmax(prediction)
+        # Probability
+        probabilities = model.predict_proba(text_vector)[0]
 
-        emotion = label_encoder.inverse_transform([predicted_class])[0]
-
-        confidence = float(np.max(prediction)) * 100
+        confidence = np.max(probabilities) * 100
 
         # =====================================================
-        # DISPLAY RESULT
+        # RESULT DISPLAY
         # =====================================================
 
         st.markdown("---")
@@ -234,10 +224,10 @@ if st.button("🔍 Analyze Emotion"):
 
             st.markdown(
                 f"""
-                <div class='prediction-box'>
-                <h2>🧠 Detected Emotion</h2>
-                <h1 style='color:#38bdf8'>{emotion.upper()}</h1>
-                <h3>Confidence: {confidence:.2f}%</h3>
+                <div class='result-box'>
+                    <h2>🧠 Detected Emotion</h2>
+                    <h1 style='color:#38bdf8'>{prediction.upper()}</h1>
+                    <h3>Confidence: {confidence:.2f}%</h3>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -245,35 +235,35 @@ if st.button("🔍 Analyze Emotion"):
 
         with col2:
 
-            chart_df = pd.DataFrame({
-                "Emotion": label_encoder.classes_,
-                "Probability": prediction[0]
+            prob_df = pd.DataFrame({
+                "Emotion": model.classes_,
+                "Probability": probabilities
             })
 
             fig = px.bar(
-                chart_df,
+                prob_df,
                 x="Emotion",
                 y="Probability",
-                title="Prediction Probabilities"
+                title="Emotion Probabilities"
             )
 
             st.plotly_chart(fig, use_container_width=True)
 
         # =====================================================
-        # GUIDANCE AREA
+        # GUIDANCE SECTION
         # =====================================================
 
         st.markdown("## 🌈 Emotional Guidance Area")
 
-        data = guidance.get(emotion.lower())
+        data = guidance.get(prediction.lower())
 
         if data:
 
             st.markdown(
                 f"""
                 <div class='tip-box'>
-                <h3>💡 Motivation</h3>
-                <p>{data['message']}</p>
+                    <h3>💡 Motivation</h3>
+                    <p>{data['message']}</p>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -282,8 +272,8 @@ if st.button("🔍 Analyze Emotion"):
             st.markdown(
                 f"""
                 <div class='tip-box'>
-                <h3>🎯 Positive Activity</h3>
-                <p>{data['activity']}</p>
+                    <h3>🎯 Positive Activity</h3>
+                    <p>{data['activity']}</p>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -291,27 +281,26 @@ if st.button("🔍 Analyze Emotion"):
 
             st.markdown("### 🌿 Wellness Tips")
 
-            for tip in data['tips']:
+            for tip in data["tips"]:
                 st.success(tip)
 
         # =====================================================
-        # RANDOM MOTIVATIONAL QUOTE
+        # RANDOM QUOTES
         # =====================================================
 
         quotes = [
-            "Small progress is still progress.",
-            "You survived difficult days before.",
-            "Your current situation is not your final destination.",
-            "Rest is productive too.",
-            "Healing takes time and strength."
+            "Small progress is still progress 🌱",
+            "Healing takes time and courage 💙",
+            "Your emotions are valid 🌸",
+            "Rest is productive too 🌙",
+            "You survived difficult days before ✨"
         ]
 
-        st.info(f"✨ {random.choice(quotes)}")
+        st.info(random.choice(quotes))
 
 # =========================================================
 # FOOTER
 # =========================================================
 
 st.markdown("---")
-
-st.caption("MindCare AI • RNN + NLP Mental Health Detection")
+st.caption("MindCare AI • NLP Mental Health Detection")
