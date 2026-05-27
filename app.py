@@ -1,6 +1,6 @@
 
 
-
+import time
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -26,7 +26,27 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+.stButton>button {
+    background: linear-gradient(90deg,#38bdf8,#0ea5e9);
+    color: white;
+    border-radius: 12px;
+    border: none;
+    padding: 12px 24px;
+    font-size: 18px;
+    font-weight: bold;
+}
 
+.stButton>button:hover {
+    transform: scale(1.03);
+    transition: 0.3s;
+}
+
+[data-testid="metric-container"] {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    padding: 15px;
+    border-radius: 15px;
+}
 .stApp {
     background: linear-gradient(to right, #0f172a, #111827);
     color: white;
@@ -67,6 +87,32 @@ st.markdown("""
     border-radius:16px;
     margin-top:15px;
     border-left:5px solid #38bdf8;
+}
+
+
+
+
+
+.stButton>button {
+    background: linear-gradient(90deg,#38bdf8,#0ea5e9);
+    color: white;
+    border-radius: 12px;
+    border: none;
+    padding: 12px 24px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.stButton>button:hover {
+    transform: scale(1.03);
+    transition: 0.3s;
+}
+
+[data-testid="metric-container"] {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    padding: 15px;
+    border-radius: 15px;
 }
 
 </style>
@@ -269,15 +315,54 @@ st.markdown(
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("📌 About")
 
-st.sidebar.info("""
-This project uses:
 
-✅ NLP  
-✅ TF-IDF Vectorization  
+
+
+
+
+
+
+
+# =========================================================
+# SIDEBAR
+# =========================================================
+
+st.sidebar.title("🧠 MindCare Dashboard")
+
+st.sidebar.success("AI Mental Health Assistant")
+
+st.sidebar.markdown("---")
+
+st.sidebar.markdown("## 📌 Features")
+
+st.sidebar.write("""
+✅ NLP Text Analysis  
+✅ TF-IDF Vectorization 
 ✅ Mental Health Detection  
-✅ Emotional Guidance System
+✅ Emotional Guidance  
+✅ Probability Analytics  
+✅ Wellness Tips  
+""")
+
+st.sidebar.markdown("---")
+
+st.sidebar.markdown("## 📊 Dataset Size")
+
+st.sidebar.metric("Training Samples", len(df))
+
+st.sidebar.metric("Emotion Classes", len(df['label'].unique()))
+
+st.sidebar.markdown("---")
+
+st.sidebar.markdown("## 💻 Technologies")
+
+st.sidebar.code("""
+Python
+Streamlit
+Scikit-Learn
+Plotly
+Pandas
 """)
 
 # =========================================================
@@ -313,38 +398,182 @@ if st.button("🔍 Analyze Emotion"):
         # RESULTS
         # =====================================================
 
-        st.markdown("---")
+        # =====================================================
+# RESULTS
+# =====================================================
 
-        col1, col2 = st.columns(2)
+st.markdown("---")
 
-        with col1:
+# Animated loading
+with st.spinner("Analyzing emotional patterns..."):
+    time.sleep(1)
 
-            st.markdown(
-                f"""
-                <div class='result-box'>
-                    <h2>🧠 Detected Emotion</h2>
-                    <h1 style='color:#38bdf8'>{prediction.upper()}</h1>
-                    <h3>Confidence: {confidence:.2f}%</h3>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+# =====================================================
+# TOP METRICS
+# =====================================================
 
-        with col2:
+metric1, metric2, metric3 = st.columns(3)
 
-            prob_df = pd.DataFrame({
-                "Emotion": model.classes_,
-                "Probability": probabilities
-            })
+with metric1:
+    st.metric("🧠 Emotion", prediction.upper())
 
-            fig = px.bar(
-                prob_df,
-                x="Emotion",
-                y="Probability",
-                title="Emotion Probabilities"
-            )
+with metric2:
+    st.metric("🎯 Confidence", f"{confidence:.2f}%")
 
-            st.plotly_chart(fig, use_container_width=True)
+with metric3:
+    risk_level = "High" if confidence > 75 else "Moderate"
+    st.metric("⚠️ Emotional Intensity", risk_level)
+
+# =====================================================
+# CONFIDENCE BAR
+# =====================================================
+
+st.markdown("### 🔥 Confidence Meter")
+
+st.progress(float(confidence / 100))
+
+# =====================================================
+# MAIN RESULT AREA
+# =====================================================
+
+col1, col2 = st.columns(2)
+
+# =====================================================
+# LEFT SIDE RESULT BOX
+# =====================================================
+
+with col1:
+
+    st.markdown(
+        f"""
+        <div class='result-box'>
+            <h2>🧠 Detected Emotion</h2>
+            <h1 style='color:#38bdf8'>{prediction.upper()}</h1>
+            <h3>Confidence Score: {confidence:.2f}%</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# =====================================================
+# RIGHT SIDE BAR CHART
+# =====================================================
+
+with col2:
+
+    prob_df = pd.DataFrame({
+        "Emotion": model.classes_,
+        "Probability": probabilities
+    })
+
+    fig = px.bar(
+        prob_df,
+        x="Emotion",
+        y="Probability",
+        title="📊 Emotion Probability Distribution",
+        text_auto=True
+    )
+
+    fig.update_layout(
+        paper_bgcolor="#111827",
+        plot_bgcolor="#111827",
+        font_color="white"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+# =====================================================
+# PIE CHART
+# =====================================================
+
+st.markdown("## 🥧 Probability Distribution Pie Chart")
+
+pie_fig = px.pie(
+    prob_df,
+    names="Emotion",
+    values="Probability",
+    hole=0.45
+)
+
+pie_fig.update_layout(
+    paper_bgcolor="#111827",
+    font_color="white"
+)
+
+st.plotly_chart(pie_fig, use_container_width=True)
+
+# =====================================================
+# EMOTIONAL GUIDANCE
+# =====================================================
+
+st.markdown("## 🌈 Emotional Guidance Area")
+
+data = guidance.get(prediction.lower())
+
+if data:
+
+    guide1, guide2 = st.columns(2)
+
+    with guide1:
+
+        st.markdown(
+            f"""
+            <div class='tip-box'>
+                <h3>💡 Motivation</h3>
+                <p>{data['message']}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with guide2:
+
+        st.markdown(
+            f"""
+            <div class='tip-box'>
+                <h3>🎯 Positive Activity</h3>
+                <p>{data['activity']}</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown("### 🌿 Wellness Tips")
+
+    for tip in data["tips"]:
+        st.success(tip)
+
+# =====================================================
+# EMOTIONAL HEALTH SCORE
+# =====================================================
+
+st.markdown("## ❤️ Emotional Wellness Score")
+
+wellness_score = 100 - confidence if prediction != "normal" else 95
+
+st.slider(
+    "Current Emotional Wellness",
+    0,
+    100,
+    int(wellness_score),
+    disabled=True
+)
+
+# =====================================================
+# QUOTES
+# =====================================================
+
+quotes = [
+    "Small progress is still progress 🌱",
+    "Healing takes time and strength 💙",
+    "Your emotions matter 🌸",
+    "Rest is productive too 🌙",
+    "You survived difficult days before ✨",
+    "Growth happens slowly but continuously 🚀",
+    "Every difficult phase teaches resilience 🌿"
+]
+
+st.info(random.choice(quotes))
 
         # =====================================================
         # GUIDANCE AREA
