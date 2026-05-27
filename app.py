@@ -314,7 +314,7 @@ st.sidebar.markdown("---")
 
 st.sidebar.markdown("## 📊 Dataset Size")
 
-st.sidebar.metric("Training Samples", len(df))
+
 st.sidebar.metric("Emotion Classes", len(df['label'].unique()))
 
 st.sidebar.markdown("---")
