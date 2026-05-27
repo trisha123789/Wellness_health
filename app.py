@@ -1,14 +1,12 @@
-
-
 import time
+import random
 import streamlit as st
 import pandas as pd
 import numpy as np
-import random
+import plotly.express as px
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-import plotly.express as px
 
 # =========================================================
 # PAGE CONFIG
@@ -26,72 +24,48 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-.stButton>button {
-    background: linear-gradient(90deg,#38bdf8,#0ea5e9);
-    color: white;
-    border-radius: 12px;
-    border: none;
-    padding: 12px 24px;
-    font-size: 18px;
-    font-weight: bold;
-}
 
-.stButton>button:hover {
-    transform: scale(1.03);
-    transition: 0.3s;
-}
-
-[data-testid="metric-container"] {
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    padding: 15px;
-    border-radius: 15px;
-}
 .stApp {
     background: linear-gradient(to right, #0f172a, #111827);
     color: white;
 }
 
 .title {
-    text-align:center;
-    font-size:55px;
-    font-weight:bold;
-    color:#38bdf8;
+    text-align: center;
+    font-size: 55px;
+    font-weight: bold;
+    color: #38bdf8;
 }
 
 .subtitle {
-    text-align:center;
-    font-size:20px;
-    color:#cbd5e1;
-    margin-bottom:30px;
+    text-align: center;
+    font-size: 20px;
+    color: #cbd5e1;
+    margin-bottom: 30px;
 }
 
 .stTextArea textarea {
-    background-color:#1e293b !important;
-    color:white !important;
-    border-radius:15px !important;
-    border:1px solid #475569 !important;
-    font-size:18px !important;
+    background-color: #1e293b !important;
+    color: white !important;
+    border-radius: 15px !important;
+    border: 1px solid #475569 !important;
+    font-size: 18px !important;
 }
 
 .result-box {
-    background:#1e293b;
-    padding:25px;
-    border-radius:20px;
-    box-shadow:0px 0px 15px rgba(0,0,0,0.5);
+    background: #1e293b;
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0px 0px 15px rgba(0,0,0,0.5);
 }
 
 .tip-box {
-    background:#111827;
-    padding:18px;
-    border-radius:16px;
-    margin-top:15px;
-    border-left:5px solid #38bdf8;
+    background: #111827;
+    padding: 18px;
+    border-radius: 16px;
+    margin-top: 15px;
+    border-left: 5px solid #38bdf8;
 }
-
-
-
-
 
 .stButton>button {
     background: linear-gradient(90deg,#38bdf8,#0ea5e9);
@@ -101,10 +75,11 @@ st.markdown("""
     padding: 12px 24px;
     font-size: 18px;
     font-weight: bold;
+    width: 100%;
 }
 
 .stButton>button:hover {
-    transform: scale(1.03);
+    transform: scale(1.02);
     transition: 0.3s;
 }
 
@@ -210,7 +185,7 @@ data = {
 df = pd.DataFrame(data)
 
 # =========================================================
-# TRAIN MODEL
+# MODEL TRAINING
 # =========================================================
 
 vectorizer = TfidfVectorizer()
@@ -219,12 +194,12 @@ X = vectorizer.fit_transform(df["text"])
 
 y = df["label"]
 
-model = LogisticRegression()
+model = LogisticRegression(max_iter=1000)
 
 model.fit(X, y)
 
 # =========================================================
-# GUIDANCE
+# GUIDANCE DATA
 # =========================================================
 
 guidance = {
@@ -304,25 +279,15 @@ guidance = {
 # TITLE
 # =========================================================
 
-st.markdown("<div class='title'>🧠 MindCare AI</div>", unsafe_allow_html=True)
+st.markdown(
+    "<div class='title'>🧠 MindCare AI</div>",
+    unsafe_allow_html=True
+)
 
 st.markdown(
     "<div class='subtitle'>Mental Health Emotion Detection System</div>",
     unsafe_allow_html=True
 )
-
-# =========================================================
-# SIDEBAR
-# =========================================================
-
-
-
-
-
-
-
-
-
 
 # =========================================================
 # SIDEBAR
@@ -338,7 +303,7 @@ st.sidebar.markdown("## 📌 Features")
 
 st.sidebar.write("""
 ✅ NLP Text Analysis  
-✅ TF-IDF Vectorization 
+✅ TF-IDF Vectorization  
 ✅ Mental Health Detection  
 ✅ Emotional Guidance  
 ✅ Probability Analytics  
@@ -350,7 +315,6 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("## 📊 Dataset Size")
 
 st.sidebar.metric("Training Samples", len(df))
-
 st.sidebar.metric("Emotion Classes", len(df['label'].unique()))
 
 st.sidebar.markdown("---")
@@ -366,7 +330,7 @@ Pandas
 """)
 
 # =========================================================
-# INPUT
+# USER INPUT
 # =========================================================
 
 user_input = st.text_area(
@@ -386,197 +350,117 @@ if st.button("🔍 Analyze Emotion"):
 
     else:
 
+        # Loading animation
+        with st.spinner("Analyzing emotional patterns..."):
+            time.sleep(1)
+
+        # Vectorize input
         text_vector = vectorizer.transform([user_input])
 
+        # Predict
         prediction = model.predict(text_vector)[0]
 
+        # Probabilities
         probabilities = model.predict_proba(text_vector)[0]
 
         confidence = np.max(probabilities) * 100
 
         # =====================================================
-        # RESULTS
+        # METRICS
         # =====================================================
 
+        st.markdown("---")
+
+        metric1, metric2, metric3 = st.columns(3)
+
+        with metric1:
+            st.metric("🧠 Emotion", prediction.upper())
+
+        with metric2:
+            st.metric("🎯 Confidence", f"{confidence:.2f}%")
+
+        with metric3:
+            risk_level = (
+                "High"
+                if prediction in ["suicidal", "depression"]
+                else "Moderate"
+            )
+            st.metric("⚠️ Emotional Intensity", risk_level)
+
         # =====================================================
-# RESULTS
-# =====================================================
+        # CONFIDENCE BAR
+        # =====================================================
 
-st.markdown("---")
+        st.markdown("### 🔥 Confidence Meter")
 
-# Animated loading
-with st.spinner("Analyzing emotional patterns..."):
-    time.sleep(1)
+        st.progress(float(confidence / 100))
 
-# =====================================================
-# TOP METRICS
-# =====================================================
+        # =====================================================
+        # RESULT SECTION
+        # =====================================================
 
-metric1, metric2, metric3 = st.columns(3)
+        col1, col2 = st.columns(2)
 
-with metric1:
-    st.metric("🧠 Emotion", prediction.upper())
+        with col1:
 
-with metric2:
-    st.metric("🎯 Confidence", f"{confidence:.2f}%")
+            st.markdown(
+                f"""
+                <div class='result-box'>
+                    <h2>🧠 Detected Emotion</h2>
+                    <h1 style='color:#38bdf8'>
+                        {prediction.upper()}
+                    </h1>
+                    <h3>Confidence Score: {confidence:.2f}%</h3>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-with metric3:
-    risk_level = "High" if confidence > 75 else "Moderate"
-    st.metric("⚠️ Emotional Intensity", risk_level)
+        with col2:
 
-# =====================================================
-# CONFIDENCE BAR
-# =====================================================
+            prob_df = pd.DataFrame({
+                "Emotion": model.classes_,
+                "Probability": probabilities
+            })
 
-st.markdown("### 🔥 Confidence Meter")
+            fig = px.bar(
+                prob_df,
+                x="Emotion",
+                y="Probability",
+                text_auto=True,
+                title="📊 Emotion Probability Distribution"
+            )
 
-st.progress(float(confidence / 100))
+            fig.update_layout(
+                paper_bgcolor="#111827",
+                plot_bgcolor="#111827",
+                font_color="white"
+            )
 
-# =====================================================
-# MAIN RESULT AREA
-# =====================================================
+            st.plotly_chart(fig, use_container_width=True)
 
-col1, col2 = st.columns(2)
+        # =====================================================
+        # PIE CHART
+        # =====================================================
 
-# =====================================================
-# LEFT SIDE RESULT BOX
-# =====================================================
+        st.markdown("## 🥧 Probability Distribution Pie Chart")
 
-with col1:
-
-    st.markdown(
-        f"""
-        <div class='result-box'>
-            <h2>🧠 Detected Emotion</h2>
-            <h1 style='color:#38bdf8'>{prediction.upper()}</h1>
-            <h3>Confidence Score: {confidence:.2f}%</h3>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-# =====================================================
-# RIGHT SIDE BAR CHART
-# =====================================================
-
-with col2:
-
-    prob_df = pd.DataFrame({
-        "Emotion": model.classes_,
-        "Probability": probabilities
-    })
-
-    fig = px.bar(
-        prob_df,
-        x="Emotion",
-        y="Probability",
-        title="📊 Emotion Probability Distribution",
-        text_auto=True
-    )
-
-    fig.update_layout(
-        paper_bgcolor="#111827",
-        plot_bgcolor="#111827",
-        font_color="white"
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
-
-# =====================================================
-# PIE CHART
-# =====================================================
-
-st.markdown("## 🥧 Probability Distribution Pie Chart")
-
-pie_fig = px.pie(
-    prob_df,
-    names="Emotion",
-    values="Probability",
-    hole=0.45
-)
-
-pie_fig.update_layout(
-    paper_bgcolor="#111827",
-    font_color="white"
-)
-
-st.plotly_chart(pie_fig, use_container_width=True)
-
-# =====================================================
-# EMOTIONAL GUIDANCE
-# =====================================================
-
-st.markdown("## 🌈 Emotional Guidance Area")
-
-data = guidance.get(prediction.lower())
-
-if data:
-
-    guide1, guide2 = st.columns(2)
-
-    with guide1:
-
-        st.markdown(
-            f"""
-            <div class='tip-box'>
-                <h3>💡 Motivation</h3>
-                <p>{data['message']}</p>
-            </div>
-            """,
-            unsafe_allow_html=True
+        pie_fig = px.pie(
+            prob_df,
+            names="Emotion",
+            values="Probability",
+            hole=0.45
         )
 
-    with guide2:
-
-        st.markdown(
-            f"""
-            <div class='tip-box'>
-                <h3>🎯 Positive Activity</h3>
-                <p>{data['activity']}</p>
-            </div>
-            """,
-            unsafe_allow_html=True
+        pie_fig.update_layout(
+            paper_bgcolor="#111827",
+            font_color="white"
         )
 
-    st.markdown("### 🌿 Wellness Tips")
-
-    for tip in data["tips"]:
-        st.success(tip)
-
-# =====================================================
-# EMOTIONAL HEALTH SCORE
-# =====================================================
-
-st.markdown("## ❤️ Emotional Wellness Score")
-
-wellness_score = 100 - confidence if prediction != "normal" else 95
-
-st.slider(
-    "Current Emotional Wellness",
-    0,
-    100,
-    int(wellness_score),
-    disabled=True
-)
-
-# =====================================================
-# QUOTES
-# =====================================================
-
-quotes = [
-    "Small progress is still progress 🌱",
-    "Healing takes time and strength 💙",
-    "Your emotions matter 🌸",
-    "Rest is productive too 🌙",
-    "You survived difficult days before ✨",
-    "Growth happens slowly but continuously 🚀",
-    "Every difficult phase teaches resilience 🌿"
-]
-
-st.info(random.choice(quotes))
+        st.plotly_chart(pie_fig, use_container_width=True)
 
         # =====================================================
-        # GUIDANCE AREA
+        # EMOTIONAL GUIDANCE
         # =====================================================
 
         st.markdown("## 🌈 Emotional Guidance Area")
@@ -585,25 +469,31 @@ st.info(random.choice(quotes))
 
         if data:
 
-            st.markdown(
-                f"""
-                <div class='tip-box'>
-                    <h3>💡 Motivation</h3>
-                    <p>{data['message']}</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            guide1, guide2 = st.columns(2)
 
-            st.markdown(
-                f"""
-                <div class='tip-box'>
-                    <h3>🎯 Positive Activity</h3>
-                    <p>{data['activity']}</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            with guide1:
+
+                st.markdown(
+                    f"""
+                    <div class='tip-box'>
+                        <h3>💡 Motivation</h3>
+                        <p>{data['message']}</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            with guide2:
+
+                st.markdown(
+                    f"""
+                    <div class='tip-box'>
+                        <h3>🎯 Positive Activity</h3>
+                        <p>{data['activity']}</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
             st.markdown("### 🌿 Wellness Tips")
 
@@ -611,7 +501,26 @@ st.info(random.choice(quotes))
                 st.success(tip)
 
         # =====================================================
-        # QUOTES
+        # WELLNESS SCORE
+        # =====================================================
+
+        st.markdown("## ❤️ Emotional Wellness Score")
+
+        if prediction == "normal":
+            wellness_score = 95
+        else:
+            wellness_score = max(10, int(100 - confidence))
+
+        st.slider(
+            "Current Emotional Wellness",
+            0,
+            100,
+            wellness_score,
+            disabled=True
+        )
+
+        # =====================================================
+        # MOTIVATIONAL QUOTES
         # =====================================================
 
         quotes = [
@@ -619,7 +528,9 @@ st.info(random.choice(quotes))
             "Healing takes time and strength 💙",
             "Your emotions matter 🌸",
             "Rest is productive too 🌙",
-            "You survived difficult days before ✨"
+            "You survived difficult days before ✨",
+            "Growth happens slowly but continuously 🚀",
+            "Every difficult phase teaches resilience 🌿"
         ]
 
         st.info(random.choice(quotes))
