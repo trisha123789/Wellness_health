@@ -276,7 +276,6 @@ This project uses:
 
 ✅ NLP  
 ✅ TF-IDF Vectorization  
-✅ Logistic Regression  
 ✅ Mental Health Detection  
 ✅ Emotional Guidance System
 """)
